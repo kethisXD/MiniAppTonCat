@@ -1,2 +1,5 @@
 pydantic
 pydantic-settings
+fastapi
+uvicorn
+jinja2

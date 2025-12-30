@@ -1,0 +1,70 @@
+.app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.topBar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 10;
+}
+
+.deviceInfo {
+    display: flex;
+    gap: 8px;
+}
+
+.badge {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.debugBadge {
+    background: #FF3B30;
+    /* iOS Red */
+    color: white;
+}
+
+.bottomBar {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+}
+
+.tonConnectWrapper {
+    transform: scale(1.1);
+    /* Make button slightly larger */
+}
+
+.debugOverlay {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    backdrop-filter: blur(4px);
+    z-index: 5;
+    pointer-events: none;
+}

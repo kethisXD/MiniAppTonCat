@@ -1,7 +1,7 @@
 
 import styles from './App.module.css';
 import { StreamBackground } from './components/StreamBackground/StreamBackground';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TonConnectUIProvider, TonConnectButton } from '@tonconnect/ui-react';
 
 // Manifest URL
@@ -15,7 +15,7 @@ function App() {
       <div className={styles.app}>
         {/* 1. Video Stream Layer */}
         <StreamBackground
-          // Real go2rtc stream from raspberry pi
+          // Proxy stream via HP Server
           streamUrl="http://192.168.1.150:1984/stream.html?src=cat_cam&mode=mse"
           posterUrl=""
         />
@@ -59,16 +59,54 @@ function App() {
           </div>
         </div>
 
-        {/* 3. Debug Overlay (Optional) */}
-        {debugMode && (
-          <div className={styles.debugOverlay}>
-            <p>Status: Connected</p>
-            <p>Feeder: Ready</p>
-            <p>Temp: 42°C</p>
-          </div>
-        )}
+        {/* 3. Debug Overlay - Always rendered but hidden to keep connection alive */}
+        <div style={{ display: debugMode ? 'block' : 'none' }}>
+          <DebugOverlay />
+        </div>
       </div>
     </TonConnectUIProvider>
+  );
+}
+
+function DebugOverlay() {
+  const [status, setStatus] = useState({ online: false, voltage: null, camera: false, error: null });
+
+  // Poll status every 3 seconds
+  useEffect(() => {
+    // Initial fetch
+    const fetchStatus = () => {
+      fetch('http://192.168.1.151:8000/status')
+        .then(res => res.json())
+        .then(data => setStatus({
+          online: true,
+          voltage: data.voltage,
+          camera: data.camera_online,
+          error: null
+        }))
+        .catch(err => setStatus(prev => ({ ...prev, online: false, error: 'Connection lost' })));
+    };
+
+    fetchStatus(); // Run immediately
+
+    const interval = setInterval(fetchStatus, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className={styles.debugOverlay}>
+      <p>
+        Status: {status.online ? '🟢 Connected' : '🔴 Offline'}
+      </p>
+      {status.online && (
+        <p>Camera: {status.camera ? '🟢 Ready' : '🔴 Error'}</p>
+      )}
+      {status.voltage !== null && (
+        <p style={{ color: status.voltage < 3.5 ? '#ff4d4d' : 'white' }}>
+          Battery: {status.voltage.toFixed(2)}V {status.voltage < 3.5 && '⚠️'}
+        </p>
+      )}
+      {status.error && <p style={{ fontSize: '10px', color: '#ffaaaa' }}>{status.error}</p>}
+    </div>
   );
 }
 

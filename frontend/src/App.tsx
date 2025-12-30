@@ -15,8 +15,8 @@ function App() {
             <div className={styles.app}>
                 {/* 1. Video Stream Layer */}
                 <StreamBackground
-                    // Placeholder video for testing (since we don't have RPi stream yet)
-                    streamUrl="https://media.w3.org/2010/05/sintel/trailer_hd.mp4"
+                    // Stream from HP Server (proxied from Pi via Tunnel)
+                    streamUrl="http://192.168.1.150:1984/api/stream.mse?src=cat_cam"
                     posterUrl="https://media.w3.org/2010/05/sintel/poster.png"
                 />
 

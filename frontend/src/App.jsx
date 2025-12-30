@@ -15,17 +15,19 @@ function App() {
       <div className={styles.app}>
         {/* 1. Video Stream Layer */}
         <StreamBackground
-          // Placeholder video for testing
-          streamUrl="https://media.w3.org/2010/05/sintel/trailer_hd.mp4"
-          posterUrl="https://media.w3.org/2010/05/sintel/poster.png"
+          // Real go2rtc stream from raspberry pi
+          streamUrl="http://192.168.1.150:1984/stream.html?src=cat_cam&mode=mse"
+          posterUrl=""
         />
 
         {/* 2. Top Bar (Overlay) */}
         <div className={styles.topBar}>
-          <div className={styles.deviceInfo}>
-            <span className={styles.badge}>устройство 1</span>
-            {debugMode && <span className={`${styles.badge} ${styles.debugBadge}`}>debug</span>}
-          </div>
+          <button
+            className={`${styles.badge} ${styles.debugBadge}`}
+            onClick={() => setDebugMode(!debugMode)}
+          >
+            debug
+          </button>
         </div>
 
         {/* 3. Bottom Controls */}

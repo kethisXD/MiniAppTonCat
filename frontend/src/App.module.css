@@ -13,7 +13,8 @@
     left: 20px;
     right: 20px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    /* Aligns content (debug badge) to the right */
     align-items: flex-start;
     z-index: 10;
 }
@@ -38,6 +39,8 @@
     background: #FF3B30;
     /* iOS Red */
     color: white;
+    cursor: pointer;
+    border: none;
 }
 
 .bottomBar {
@@ -58,7 +61,8 @@
 .debugOverlay {
     position: absolute;
     top: 80px;
-    left: 20px;
+    right: 20px;
+    /* Moved to right */
     background: rgba(0, 0, 0, 0.6);
     padding: 10px;
     border-radius: 8px;

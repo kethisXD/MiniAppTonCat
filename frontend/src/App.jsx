@@ -22,6 +22,28 @@ function App() {
 
         {/* 2. Top Bar (Overlay) */}
         <div className={styles.topBar}>
+          {/* Light Control Buttons (Simple ON/OFF) */}
+          {debugMode && (
+            <button
+              className={`${styles.badge} ${styles.lightBadge}`}
+              onClick={() => fetch('http://192.168.1.151:8000/light/on', { method: 'POST' }).catch(console.error)}
+            >
+              🔦 ON
+            </button>
+          )}
+
+          {debugMode && (
+            <button
+              className={`${styles.badge} ${styles.lightBadge}`}
+              onClick={() => fetch('http://192.168.1.151:8000/light/off', { method: 'POST' }).catch(console.error)}
+              style={{ marginLeft: '10px', background: '#333', color: 'white' }}
+            >
+              OFF
+            </button>
+          )}
+
+          <div style={{ flex: 1 }} /> {/* Spacer */}
+
           <button
             className={`${styles.badge} ${styles.debugBadge}`}
             onClick={() => setDebugMode(!debugMode)}

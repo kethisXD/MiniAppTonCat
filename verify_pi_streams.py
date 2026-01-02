@@ -1,23 +1,22 @@
 import pty
 import os
-import time
 import select
+import time
 
-def check_pi():
+def verify_pi():
     pid, fd = pty.fork()
     if pid == 0:
         # Child
-        # Sudo might be needed. "sudo killall pigpiod"
-        os.execlp("ssh", "ssh", "-p", "6969", "-o", "StrictHostKeyChecking=no", "xxx@192.168.1.151", "sudo killall pigpiod")
+        cmd = "curl -s http://127.0.0.1:1984/api/streams"
+        os.execlp("ssh", "ssh", "-p", "6969", "-o", "StrictHostKeyChecking=no", "xxx@192.168.1.151", cmd)
     else:
         # Parent
         output = b""
         password_sent = False
         
         while True:
-            r, _, _ = select.select([fd], [], [], 2.0)
+            r, _, _ = select.select([fd], [], [], 3.0)
             if not r:
-                # Timeout
                 break
                 
             try:
@@ -26,8 +25,6 @@ def check_pi():
                     break
                 output += chunk
                 
-                # Simple heuristic for password prompt
-                # Note: "xxx@192.168.1.151's password:"
                 if not password_sent and (b"password:" in output.lower()):
                     os.write(fd, b"__SSH_PASSWORD__\n")
                     password_sent = True
@@ -35,7 +32,7 @@ def check_pi():
             except OSError:
                 break
                 
-        print("Output:", output.decode("utf-8", errors="ignore"))
+        print("Pi Streams:", output.decode("utf-8", errors="ignore"))
 
 if __name__ == "__main__":
-    check_pi()
+    verify_pi()

@@ -19,8 +19,18 @@ app.add_middleware(
 
 # PIN CONFIG
 LIGHT_PIN = 26
+MOTOR_PIN = 18 # Physical Pin 12 (Servo)
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LIGHT_PIN, GPIO.OUT)
+GPIO.setup(MOTOR_PIN, GPIO.OUT)
+
+# SERVO SETUP
+# 50Hz frequency for servo
+motor_pwm = GPIO.PWM(MOTOR_PIN, 50) 
+motor_pwm.start(0) # Start with 0 duty (no signal)
+
+
 
 # INA219 SETUP
 ina = None
@@ -66,5 +76,23 @@ def toggle_light(state: str):
     GPIO.output(LIGHT_PIN, val)
     return {"status": "success"}
 
+@app.post("/motor/{state}")
+def toggle_motor(state: str):
+    print(f"Motor request: {state}")
+    
+    if state.lower() == "on":
+        # Continuous spin
+        # 10% duty cycle (approx full speed for some servos, or half for DC driven by PWM)
+        motor_pwm.ChangeDutyCycle(10) 
+    else:
+        # Stop
+        motor_pwm.ChangeDutyCycle(0)
+    
+    return {"status": "success", "state": state}
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    finally:
+        motor_pwm.stop()
+        GPIO.cleanup()

@@ -42,6 +42,27 @@ function App() {
             </button>
           )}
 
+          {/* Motor Control Buttons */}
+          {debugMode && (
+            <button
+              className={`${styles.badge} ${styles.lightBadge}`}
+              onClick={() => fetch('http://192.168.1.151:8000/motor/on', { method: 'POST' }).catch(console.error)}
+              style={{ marginLeft: '20px', background: '#e67e22' }}
+            >
+              ⚙️ ON
+            </button>
+          )}
+
+          {debugMode && (
+            <button
+              className={`${styles.badge} ${styles.lightBadge}`}
+              onClick={() => fetch('http://192.168.1.151:8000/motor/off', { method: 'POST' }).catch(console.error)}
+              style={{ marginLeft: '10px', background: '#333', color: 'white' }}
+            >
+              OFF
+            </button>
+          )}
+
           <div style={{ flex: 1 }} /> {/* Spacer */}
 
           <button

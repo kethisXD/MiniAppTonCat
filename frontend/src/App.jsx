@@ -82,15 +82,17 @@ function App() {
 
         {/* 3. Debug Overlay - Always rendered but hidden to keep connection alive */}
         <div style={{ display: debugMode ? 'block' : 'none' }}>
-          <DebugOverlay />
+          <div style={{ display: debugMode ? 'block' : 'none' }}>
+            <DebugOverlay isVisible={debugMode} />
+          </div>
         </div>
       </div>
     </TonConnectUIProvider>
   );
 }
 
-function DebugOverlay() {
-  const [status, setStatus] = useState({ online: false, voltage: null, camera: false, error: null });
+function DebugOverlay({ isVisible }) {
+  const [status, setStatus] = useState({ online: false, voltage: null, sensor_error: null, camera: false, error: null });
 
   const fetchStatus = () => {
     fetch('http://192.168.1.151:8000/status')
@@ -98,19 +100,24 @@ function DebugOverlay() {
       .then(data => setStatus({
         online: true,
         voltage: data.voltage,
+        sensor_error: data.sensor_error,
         camera: data.camera_online,
         error: null
       }))
-      .catch(err => setStatus(prev => ({ ...prev, online: false, error: 'Connection lost' })));
+      .catch(() => setStatus(prev => ({ ...prev, online: false, error: 'Connection lost' })));
   };
 
-  // Poll status every 5 minutes
+  // Poll status every 10 seconds or when made visible
   useEffect(() => {
-    fetchStatus(); // Run immediately
+    if (isVisible) {
+      fetchStatus();
+    }
 
-    const interval = setInterval(fetchStatus, 300000);
+    const interval = setInterval(() => {
+      if (isVisible) fetchStatus();
+    }, 10000); // 10 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [isVisible]);
 
   return (
     <div className={styles.debugOverlay}>
@@ -120,9 +127,13 @@ function DebugOverlay() {
       {status.online && (
         <p>Camera: {status.camera ? '🟢 Ready' : '🔴 Error'}</p>
       )}
-      {status.voltage !== null && (
-        <p style={{ color: status.voltage < 3.5 ? '#ff4d4d' : 'white' }}>
-          Battery: {status.voltage.toFixed(2)}V {status.voltage < 3.5 && '⚠️'}
+      {status.voltage !== null ? (
+        <p style={{ color: status.voltage < 3.6 ? '#ff4d4d' : 'white' }}>
+          Voltage: {status.voltage.toFixed(2)}V
+        </p>
+      ) : (
+        <p style={{ color: '#ffaaaa' }}>
+          Voltage: {status.sensor_error || 'N/A'}
         </p>
       )}
       {status.error && <p style={{ fontSize: '10px', color: '#ffaaaa' }}>{status.error}</p>}

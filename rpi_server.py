@@ -57,9 +57,17 @@ def read_root():
 def get_status():
     # Voltage
     voltage = None
-    if HAS_INA219 and ina:
-        try: voltage = ina.voltage()
-        except: pass
+    sensor_error = None
+    
+    if not HAS_INA219:
+        sensor_error = "ina219 lib missing"
+    elif ina is None:
+        sensor_error = "ina219 init failed"
+    else:
+        try: 
+            voltage = ina.voltage()
+        except Exception as e: 
+            sensor_error = f"Read Err: {str(e)}"
     
     # Camera Status
     cam_active = check_camera_status()
@@ -67,6 +75,7 @@ def get_status():
     return {
         "online": True, 
         "voltage": voltage,
+        "sensor_error": sensor_error,
         "camera_online": cam_active
     }
 

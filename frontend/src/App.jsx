@@ -92,24 +92,23 @@ function App() {
 function DebugOverlay() {
   const [status, setStatus] = useState({ online: false, voltage: null, camera: false, error: null });
 
-  // Poll status every 3 seconds
-  useEffect(() => {
-    // Initial fetch
-    const fetchStatus = () => {
-      fetch('http://192.168.1.151:8000/status')
-        .then(res => res.json())
-        .then(data => setStatus({
-          online: true,
-          voltage: data.voltage,
-          camera: data.camera_online,
-          error: null
-        }))
-        .catch(err => setStatus(prev => ({ ...prev, online: false, error: 'Connection lost' })));
-    };
+  const fetchStatus = () => {
+    fetch('http://192.168.1.151:8000/status')
+      .then(res => res.json())
+      .then(data => setStatus({
+        online: true,
+        voltage: data.voltage,
+        camera: data.camera_online,
+        error: null
+      }))
+      .catch(err => setStatus(prev => ({ ...prev, online: false, error: 'Connection lost' })));
+  };
 
+  // Poll status every 5 minutes
+  useEffect(() => {
     fetchStatus(); // Run immediately
 
-    const interval = setInterval(fetchStatus, 3000);
+    const interval = setInterval(fetchStatus, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -127,6 +126,22 @@ function DebugOverlay() {
         </p>
       )}
       {status.error && <p style={{ fontSize: '10px', color: '#ffaaaa' }}>{status.error}</p>}
+
+      <button
+        onClick={fetchStatus}
+        style={{
+          marginTop: '10px',
+          padding: '4px 8px',
+          fontSize: '12px',
+          background: '#444',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer'
+        }}
+      >
+        Refresh Status
+      </button>
     </div>
   );
 }

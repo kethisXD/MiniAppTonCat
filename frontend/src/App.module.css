@@ -19,6 +19,19 @@
     z-index: 10;
 }
 
+.controlsColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.controlRow {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 .deviceInfo {
     display: flex;
     gap: 8px;

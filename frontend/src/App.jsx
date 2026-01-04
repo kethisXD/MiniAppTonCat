@@ -53,45 +53,45 @@ function App() {
 
         {/* 2. Top Bar (Overlay) */}
         <div className={styles.topBar}>
-          {/* Light Control Buttons (Simple ON/OFF) */}
           {debugMode && (
-            <button
-              className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch(`${API_BASE}/light/on`, { method: 'POST' }).catch(console.error)}
-            >
-              🔦 ON
-            </button>
-          )}
+            <div className={styles.controlsColumn}>
+              {/* Light Control Buttons (Simple ON/OFF) */}
+              <div className={styles.controlRow}>
+                <button
+                  className={`${styles.badge} ${styles.lightBadge}`}
+                  onClick={() => fetch(`${API_BASE}/light/on`, { method: 'POST' }).catch(console.error)}
+                >
+                  🔦 ON
+                </button>
 
-          {debugMode && (
-            <button
-              className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch(`${API_BASE}/light/off`, { method: 'POST' }).catch(console.error)}
-              style={{ marginLeft: '10px', background: '#333', color: 'white' }}
-            >
-              OFF
-            </button>
-          )}
+                <button
+                  className={`${styles.badge} ${styles.lightBadge}`}
+                  onClick={() => fetch(`${API_BASE}/light/off`, { method: 'POST' }).catch(console.error)}
+                  style={{ background: '#333', color: 'white' }}
+                >
+                  OFF
+                </button>
+              </div>
 
-          {/* Motor Control Buttons */}
-          {debugMode && (
-            <button
-              className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch(`${API_BASE}/motor/on`, { method: 'POST' }).catch(console.error)}
-              style={{ marginLeft: '20px', background: '#e67e22' }}
-            >
-              ⚙️ ON
-            </button>
-          )}
+              {/* Motor Control Buttons */}
+              <div className={styles.controlRow}>
+                <button
+                  className={`${styles.badge} ${styles.lightBadge}`}
+                  onClick={() => fetch(`${API_BASE}/motor/on`, { method: 'POST' }).catch(console.error)}
+                  style={{ background: '#e67e22' }}
+                >
+                  ⚙️ ON
+                </button>
 
-          {debugMode && (
-            <button
-              className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch(`${API_BASE}/motor/off`, { method: 'POST' }).catch(console.error)}
-              style={{ marginLeft: '10px', background: '#333', color: 'white' }}
-            >
-              OFF
-            </button>
+                <button
+                  className={`${styles.badge} ${styles.lightBadge}`}
+                  onClick={() => fetch(`${API_BASE}/motor/off`, { method: 'POST' }).catch(console.error)}
+                  style={{ background: '#333', color: 'white' }}
+                >
+                  OFF
+                </button>
+              </div>
+            </div>
           )}
 
           <div style={{ flex: 1 }} /> {/* Spacer */}

@@ -3,3 +3,8 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Deployment scripts (Secrets)
+deploy_scp.py
+ssh_exec.py
+frontend.tar.gz

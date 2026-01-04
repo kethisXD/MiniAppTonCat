@@ -5,10 +5,19 @@ import { useState, useEffect } from 'react';
 import { TonConnectUIProvider, TonConnectButton } from '@tonconnect/ui-react';
 
 // Manifest URL
-const MANIFEST_URL = 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json';
+const MANIFEST_URL = `${window.location.origin}/tonconnect-manifest.json`;
+
 
 function App() {
   const [debugMode, setDebugMode] = useState(true);
+
+  useEffect(() => {
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+  }, []);
+
 
   return (
     <TonConnectUIProvider manifestUrl={MANIFEST_URL}>
@@ -16,7 +25,7 @@ function App() {
         {/* 1. Video Stream Layer */}
         <StreamBackground
           // Proxy stream via HP Server
-          streamUrl="http://192.168.1.150:1984/stream.html?src=cat_cam&mode=mse"
+          streamUrl="/stream.html?src=cat_cam&mode=mse"
           posterUrl=""
         />
 
@@ -26,7 +35,7 @@ function App() {
           {debugMode && (
             <button
               className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch('http://192.168.1.151:8000/light/on', { method: 'POST' }).catch(console.error)}
+              onClick={() => fetch('/pi/light/on', { method: 'POST' }).catch(console.error)}
             >
               🔦 ON
             </button>
@@ -35,7 +44,7 @@ function App() {
           {debugMode && (
             <button
               className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch('http://192.168.1.151:8000/light/off', { method: 'POST' }).catch(console.error)}
+              onClick={() => fetch('/pi/light/off', { method: 'POST' }).catch(console.error)}
               style={{ marginLeft: '10px', background: '#333', color: 'white' }}
             >
               OFF
@@ -46,7 +55,7 @@ function App() {
           {debugMode && (
             <button
               className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch('http://192.168.1.151:8000/motor/on', { method: 'POST' }).catch(console.error)}
+              onClick={() => fetch('/pi/motor/on', { method: 'POST' }).catch(console.error)}
               style={{ marginLeft: '20px', background: '#e67e22' }}
             >
               ⚙️ ON
@@ -56,7 +65,7 @@ function App() {
           {debugMode && (
             <button
               className={`${styles.badge} ${styles.lightBadge}`}
-              onClick={() => fetch('http://192.168.1.151:8000/motor/off', { method: 'POST' }).catch(console.error)}
+              onClick={() => fetch('/pi/motor/off', { method: 'POST' }).catch(console.error)}
               style={{ marginLeft: '10px', background: '#333', color: 'white' }}
             >
               OFF
@@ -95,7 +104,7 @@ function DebugOverlay({ isVisible }) {
   const [status, setStatus] = useState({ online: false, voltage: null, sensor_error: null, camera: false, error: null });
 
   const fetchStatus = () => {
-    fetch('http://192.168.1.151:8000/status')
+    fetch('/pi/status')
       .then(res => res.json())
       .then(data => setStatus({
         online: true,

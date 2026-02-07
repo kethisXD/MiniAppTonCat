@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import RPi.GPIO as GPIO
 import uvicorn
 import socket
+import time
 
 # Try to import INA219
 try:
@@ -20,6 +21,10 @@ app.add_middleware(
 # PIN CONFIG
 LIGHT_PIN = 26
 MOTOR_PIN = 18 # Physical Pin 12 (Servo)
+
+# CONFIG VARIABLES
+FEED_DURATION = 0.5 # Seconds to rotate for "30 degrees" (Adjust this!)
+
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LIGHT_PIN, GPIO.OUT)
@@ -98,6 +103,23 @@ def toggle_motor(state: str):
         motor_pwm.ChangeDutyCycle(0)
     
     return {"status": "success", "state": state}
+
+@app.post("/feed")
+def feed_cat():
+    """
+    Rotates the motor for FEED_DURATION seconds.
+    Used for 'minimal donate' feature.
+    """
+    print(f"Feeding cat for {FEED_DURATION} seconds...")
+    
+    # Motor ON
+    motor_pwm.ChangeDutyCycle(10)
+    time.sleep(FEED_DURATION)
+    
+    # Motor OFF
+    motor_pwm.ChangeDutyCycle(0)
+    
+    return {"status": "fed", "duration": FEED_DURATION}
 
 if __name__ == "__main__":
     try:

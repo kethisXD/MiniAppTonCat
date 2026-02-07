@@ -2,9 +2,9 @@
 import styles from './App.module.css';
 import { StreamBackground } from './components/StreamBackground/StreamBackground';
 import { useState, useEffect } from 'react';
-import { TonConnectUIProvider, TonConnectButton } from '@tonconnect/ui-react';
+import { TonConnectUIProvider, TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
+import { DonationButton } from './components/DonationButton';
 
-// Manifest URL
 // Manifest URL
 const MANIFEST_URL = `${window.location.origin}/tonconnect-manifest.json`;
 
@@ -30,8 +30,9 @@ const getStreamUrl = () => {
 
 const STREAM_URL = getStreamUrl();
 
-function App() {
+function AppContent() {
   const [debugMode, setDebugMode] = useState(true);
+  const wallet = useTonWallet();
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -42,88 +43,108 @@ function App() {
 
 
   return (
-    <TonConnectUIProvider manifestUrl={MANIFEST_URL}>
-      <div className={styles.app}>
-        {/* 1. Video Stream Layer */}
-        <StreamBackground
-          // Proxy stream via HP Server
-          streamUrl={STREAM_URL}
-          posterUrl=""
-        />
+    <div className={styles.app}>
+      {/* 1. Video Stream Layer */}
+      <StreamBackground
+        // Proxy stream via HP Server
+        streamUrl={STREAM_URL}
+        posterUrl=""
+      />
 
-        {/* 2. Top Bar (Overlay) */}
-        <div className={styles.topBar}>
-          {debugMode && (
-            <div className={styles.controlsColumn}>
-              {/* Light Control Buttons (Simple ON/OFF) */}
-              <div className={styles.controlRow}>
-                <button
-                  className={`${styles.badge} ${styles.lightBadge}`}
-                  onClick={() => fetch(`${API_BASE}/light/on`, { method: 'POST' }).catch(console.error)}
-                >
-                  🔦 ON
-                </button>
+      {/* 2. Top Bar (Overlay) */}
+      <div className={styles.topBar}>
+        {debugMode && (
+          <div className={styles.controlsColumn}>
+            {/* Light Control Buttons (Simple ON/OFF) */}
+            <div className={styles.controlRow}>
+              <button
+                className={`${styles.badge} ${styles.lightBadge}`}
+                onClick={() => fetch(`${API_BASE}/light/on`, { method: 'POST' }).catch(console.error)}
+              >
+                🔦 ON
+              </button>
 
-                <button
-                  className={`${styles.badge} ${styles.lightBadge}`}
-                  onClick={() => fetch(`${API_BASE}/light/off`, { method: 'POST' }).catch(console.error)}
-                  style={{ background: '#333', color: 'white' }}
-                >
-                  OFF
-                </button>
-              </div>
-
-              {/* Motor Control Buttons */}
-              <div className={styles.controlRow}>
-                <button
-                  className={`${styles.badge} ${styles.lightBadge}`}
-                  onClick={() => fetch(`${API_BASE}/motor/on`, { method: 'POST' }).catch(console.error)}
-                  style={{ background: '#e67e22' }}
-                >
-                  ⚙️ ON
-                </button>
-
-                <button
-                  className={`${styles.badge} ${styles.lightBadge}`}
-                  onClick={() => fetch(`${API_BASE}/motor/off`, { method: 'POST' }).catch(console.error)}
-                  style={{ background: '#333', color: 'white' }}
-                >
-                  OFF
-                </button>
-              </div>
+              <button
+                className={`${styles.badge} ${styles.lightBadge}`}
+                onClick={() => fetch(`${API_BASE}/light/off`, { method: 'POST' }).catch(console.error)}
+                style={{ background: '#333', color: 'white' }}
+              >
+                OFF
+              </button>
             </div>
-          )}
 
-          <div style={{ flex: 1 }} /> {/* Spacer */}
+            {/* Motor Control Buttons */}
+            <div className={styles.controlRow}>
+              <button
+                className={`${styles.badge} ${styles.lightBadge}`}
+                onClick={() => fetch(`${API_BASE}/motor/on`, { method: 'POST' }).catch(console.error)}
+                style={{ background: '#e67e22' }}
+              >
+                ⚙️ ON
+              </button>
 
-          <button
-            className={`${styles.badge} ${styles.debugBadge}`}
-            onClick={() => setDebugMode(!debugMode)}
-          >
-            debug
-          </button>
-        </div>
+              <button
+                className={`${styles.badge} ${styles.lightBadge}`}
+                onClick={() => fetch(`${API_BASE}/motor/off`, { method: 'POST' }).catch(console.error)}
+                style={{ background: '#333', color: 'white' }}
+              >
+                OFF
+              </button>
+            </div>
+          </div>
+        )}
 
-        {/* 3. Bottom Controls */}
-        <div className={styles.bottomBar}>
+        <div style={{ flex: 1 }} /> {/* Spacer */}
+
+        <button
+          className={`${styles.badge} ${styles.debugBadge}`}
+          onClick={() => setDebugMode(!debugMode)}
+        >
+          debug
+        </button>
+      </div>
+
+      {/* 3. Bottom Controls */}
+      <div className={styles.bottomBar}>
+        {!wallet ? (
           <div className={styles.tonConnectWrapper}>
             <TonConnectButton className={styles.tonBtn} />
           </div>
-        </div>
-
-        {/* 3. Debug Overlay - Always rendered but hidden to keep connection alive */}
-        <div style={{ display: debugMode ? 'block' : 'none' }}>
-          <div style={{ display: debugMode ? 'block' : 'none' }}>
-            <DebugOverlay isVisible={debugMode} />
+        ) : (
+          <div style={{ width: '80%', display: 'flex', justifyContent: 'center' }}>
+            <DonationButton apiBase={API_BASE} />
           </div>
+        )}
+      </div>
+
+      {/* 3. Debug Overlay - Always rendered but hidden to keep connection alive */}
+      <div style={{ display: debugMode ? 'block' : 'none' }}>
+        <div style={{ display: debugMode ? 'block' : 'none' }}>
+          <DebugOverlay isVisible={debugMode} wallet={wallet} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <TonConnectUIProvider manifestUrl={MANIFEST_URL}>
+      <AppContent />
     </TonConnectUIProvider>
   );
 }
 
-function DebugOverlay({ isVisible }) {
-  const [status, setStatus] = useState({ online: false, voltage: null, sensor_error: null, camera: false, error: null });
+function DebugOverlay({ isVisible, wallet }) {
+  const [status, setStatus] = useState({
+    online: false,
+    voltage: null,
+    sensor_error: null,
+    camera: false,
+    error: null,
+    walletConnected: false,
+    walletAddress: ''
+  });
 
   const fetchStatus = () => {
     fetch(`${API_BASE}/status`)
@@ -133,9 +154,17 @@ function DebugOverlay({ isVisible }) {
         voltage: data.voltage,
         sensor_error: data.sensor_error,
         camera: data.camera_online,
-        error: null
+        error: null,
+        walletConnected: !!wallet,
+        walletAddress: wallet?.account?.address || ''
       }))
-      .catch(() => setStatus(prev => ({ ...prev, online: false, error: 'Connection lost' })));
+      .catch(() => setStatus(prev => ({
+        ...prev,
+        online: false,
+        error: 'Connection lost',
+        walletConnected: !!wallet,
+        walletAddress: wallet?.account?.address || ''
+      })));
   };
 
   // Poll status every 10 seconds or when made visible
@@ -148,10 +177,11 @@ function DebugOverlay({ isVisible }) {
       if (isVisible) fetchStatus();
     }, 10000); // 10 seconds
     return () => clearInterval(interval);
-  }, [isVisible]);
+  }, [isVisible, wallet]);
 
   return (
     <div className={styles.debugOverlay}>
+      <p style={{ fontWeight: 'bold', color: '#ffd700' }}>v2.0 Check</p>
       <p>
         Status: {status.online ? '🟢 Connected' : '🔴 Offline'}
       </p>
@@ -168,6 +198,11 @@ function DebugOverlay({ isVisible }) {
         </p>
       )}
       {status.error && <p style={{ fontSize: '10px', color: '#ffaaaa' }}>{status.error}</p>}
+
+      <div style={{ marginTop: '8px', borderTop: '1px solid #555', paddingTop: '4px' }}>
+        <p>Wallet: {status.walletConnected ? '✅ Linked' : '❌ Null'}</p>
+        <p style={{ fontSize: '9px', wordBreak: 'break-all' }}>{status.walletAddress}</p>
+      </div>
 
       <button
         onClick={fetchStatus}

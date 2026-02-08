@@ -2,25 +2,27 @@ import { useTonConnectUI } from '@tonconnect/ui-react';
 import { useState } from 'react';
 import styles from '../App.module.css';
 
-const RECEIVER_ADDRESS = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_";
+const RECEIVER_ADDRESS_MAINNET = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_";
+const RECEIVER_ADDRESS_TESTNET = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_"; // TODO: Replace with actual testnet address if different
 const DONATION_AMOUNT_TON = "0.1"; // Minimal donation
 const DONATION_AMOUNT_NANOTONS = "100000000"; // 0.1 * 10^9
 
-export function DonationButton({ apiBase }) {
+export function DonationButton({ apiBase, isTestnet }) {
     const [tonConnectUI] = useTonConnectUI();
     const [status, setStatus] = useState('idle'); // idle, processing, success, error
     const [message, setMessage] = useState('');
 
     const handleDonation = async () => {
+        const targetAddress = isTestnet ? RECEIVER_ADDRESS_TESTNET : RECEIVER_ADDRESS_MAINNET;
         setStatus('processing');
-        setMessage('Please approve the transaction in your wallet...');
+        setMessage(`Please approve the transaction in your wallet... (${isTestnet ? 'TESTNET' : 'MAINNET'})`);
 
         try {
             const transaction = {
                 validUntil: Math.floor(Date.now() / 1000) + 360, // 6 minutes
                 messages: [
                     {
-                        address: RECEIVER_ADDRESS,
+                        address: targetAddress,
                         amount: DONATION_AMOUNT_NANOTONS, // 0.1 TON
                     }
                 ]

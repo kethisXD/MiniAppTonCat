@@ -9,6 +9,12 @@ import { DonationButton } from './components/DonationButton';
 const MANIFEST_URL = `${window.location.origin}/tonconnect-manifest.json`;
 
 const getApiBaseUrl = () => {
+  // Allow override via query param ?api=...
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('api')) {
+    return params.get('api');
+  }
+
   // Check if running locally (dev mode)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://192.168.1.151:8000';
@@ -20,6 +26,12 @@ const getApiBaseUrl = () => {
 const API_BASE = getApiBaseUrl();
 
 const getStreamUrl = () => {
+  // Allow override via query param ?stream=...
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('stream')) {
+    return params.get('stream');
+  }
+
   // Check if running locally (dev mode)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://192.168.1.150:1984/stream.html?src=cat_cam&mode=mse';
@@ -32,7 +44,16 @@ const STREAM_URL = getStreamUrl();
 
 function AppContent() {
   const [debugMode, setDebugMode] = useState(true);
+  const [isTestnet, setIsTestnet] = useState(false);
   const wallet = useTonWallet();
+
+  useEffect(() => {
+    // Initial fetch to get network mode
+    fetch(`${API_BASE}/status`)
+      .then(res => res.json())
+      .then(data => setIsTestnet(!!data.testnet))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -112,7 +133,7 @@ function AppContent() {
           </div>
         ) : (
           <div style={{ width: '80%', display: 'flex', justifyContent: 'center' }}>
-            <DonationButton apiBase={API_BASE} />
+            <DonationButton apiBase={API_BASE} isTestnet={isTestnet} />
           </div>
         )}
       </div>
@@ -143,21 +164,26 @@ function DebugOverlay({ isVisible, wallet }) {
     camera: false,
     error: null,
     walletConnected: false,
-    walletAddress: ''
+    walletAddress: '',
+    testnet: false
   });
 
   const fetchStatus = () => {
     fetch(`${API_BASE}/status`)
       .then(res => res.json())
-      .then(data => setStatus({
-        online: true,
-        voltage: data.voltage,
-        sensor_error: data.sensor_error,
-        camera: data.camera_online,
-        error: null,
-        walletConnected: !!wallet,
-        walletAddress: wallet?.account?.address || ''
-      }))
+      .then(data => {
+        console.log("Status Fetch:", data); // Debugging
+        setStatus({
+          online: true,
+          voltage: data.voltage,
+          sensor_error: data.sensor_error,
+          camera: data.camera_online,
+          error: null,
+          walletConnected: !!wallet,
+          walletAddress: wallet?.account?.address || '',
+          testnet: !!data.testnet
+        });
+      })
       .catch(() => setStatus(prev => ({
         ...prev,
         online: false,
@@ -181,9 +207,10 @@ function DebugOverlay({ isVisible, wallet }) {
 
   return (
     <div className={styles.debugOverlay}>
-      <p style={{ fontWeight: 'bold', color: '#ffd700' }}>v2.0 Check</p>
+      <p style={{ fontWeight: 'bold', color: '#ffd700' }}>v2.1 Check</p>
       <p>
         Status: {status.online ? '🟢 Connected' : '🔴 Offline'}
+        {status.online && status.testnet && <span style={{ color: '#ff4d4d', fontWeight: 'bold', marginLeft: '5px' }}>(TESTNET)</span>}
       </p>
       {status.online && (
         <p>Camera: {status.camera ? '🟢 Ready' : '🔴 Error'}</p>

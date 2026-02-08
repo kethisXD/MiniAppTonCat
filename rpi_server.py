@@ -4,6 +4,8 @@ import RPi.GPIO as GPIO
 import uvicorn
 import socket
 import time
+import configparser
+import os
 
 # Try to import INA219
 try:
@@ -18,12 +20,18 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
 )
 
+# CONFIG LOAD
+config_path = os.path.join(os.path.dirname(__file__), 'config.ini')
+config = configparser.ConfigParser()
+config.read(config_path)
+IS_TESTNET = config.getboolean('DEFAULT', 'testnet', fallback=False)
+
 # PIN CONFIG
 LIGHT_PIN = 26
 MOTOR_PIN = 18 # Physical Pin 12 (Servo)
 
 # CONFIG VARIABLES
-FEED_DURATION = 0.5 # Seconds to rotate for "30 degrees" (Adjust this!)
+FEED_DURATION = config.getfloat('DEFAULT', 'feed_duration', fallback=0.5)
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -81,7 +89,9 @@ def get_status():
         "online": True, 
         "voltage": voltage,
         "sensor_error": sensor_error,
-        "camera_online": cam_active
+        "sensor_error": sensor_error,
+        "camera_online": cam_active,
+        "testnet": IS_TESTNET
     }
 
 @app.post("/light/{state}")

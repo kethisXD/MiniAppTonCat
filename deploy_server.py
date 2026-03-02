@@ -12,12 +12,12 @@ def deploy():
         password = getpass.getpass("Enter SSH Password for Raspberry Pi: ")
     
     # SCP
-    cmd_scp = ["scp", "-P", "6969", "-o", "StrictHostKeyChecking=no", "rpi_server.py", "xxx@192.168.1.151:~/tonCatNode/rpi_server.py"]
+    cmd_scp = ["scp", "-P", "6969", "-o", "StrictHostKeyChecking=no", "rpi_server.py", "xxx@100.71.244.91:~/tonCatNode/rpi_server.py"]
     
     run_command(cmd_scp, password)
     
     # SCP Config
-    cmd_scp_config = ["scp", "-P", "6969", "-o", "StrictHostKeyChecking=no", "config.ini", "xxx@192.168.1.151:~/tonCatNode/config.ini"]
+    cmd_scp_config = ["scp", "-P", "6969", "-o", "StrictHostKeyChecking=no", "config.ini", "xxx@100.71.244.91:~/tonCatNode/config.ini"]
     run_command(cmd_scp_config, password)
     
     # SSH Restart
@@ -25,7 +25,7 @@ def deploy():
     # Kill existing, then start new in background
     remote_cmd = "sudo pkill -f rpi_server.py; cd /home/xxx/tonCatNode && nohup /home/xxx/tonCatNode/.venv/bin/python3 rpi_server.py > /home/xxx/tonCatNode/server.log 2>&1 &"
     
-    cmd_ssh = ["ssh", "-p", "6969", "-o", "StrictHostKeyChecking=no", "xxx@192.168.1.151", remote_cmd]
+    cmd_ssh = ["ssh", "-p", "6969", "-o", "StrictHostKeyChecking=no", "xxx@100.71.244.91", remote_cmd]
     
     run_command(cmd_ssh, password)
 

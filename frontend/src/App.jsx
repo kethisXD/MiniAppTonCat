@@ -98,18 +98,18 @@ function AppContent() {
             <div className={styles.controlRow}>
               <button
                 className={`${styles.badge} ${styles.lightBadge}`}
-                onClick={() => fetch(`${API_BASE}/motor/on`, { method: 'POST' }).catch(console.error)}
+                onClick={() => fetch(`${API_BASE}/motor/left`, { method: 'POST' }).catch(console.error)}
                 style={{ background: '#e67e22' }}
               >
-                ⚙️ ON
+                ⬅️ Left
               </button>
 
               <button
                 className={`${styles.badge} ${styles.lightBadge}`}
-                onClick={() => fetch(`${API_BASE}/motor/off`, { method: 'POST' }).catch(console.error)}
-                style={{ background: '#333', color: 'white' }}
+                onClick={() => fetch(`${API_BASE}/motor/right`, { method: 'POST' }).catch(console.error)}
+                style={{ background: '#e67e22' }}
               >
-                OFF
+                Right ➡️
               </button>
             </div>
           </div>

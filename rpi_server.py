@@ -32,6 +32,7 @@ MOTOR_PIN = 18 # Physical Pin 12 (Servo)
 
 # CONFIG VARIABLES
 FEED_DURATION = config.getfloat('DEFAULT', 'feed_duration', fallback=0.5)
+MOTOR_DURATION = config.getfloat('DEFAULT', 'motor_duration', fallback=0.5)
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -104,12 +105,15 @@ def toggle_light(state: str):
 def toggle_motor(state: str):
     print(f"Motor request: {state}")
     
-    if state.lower() == "on":
-        # Continuous spin
-        # 10% duty cycle (approx full speed for some servos, or half for DC driven by PWM)
-        motor_pwm.ChangeDutyCycle(10) 
+    if state.lower() == "left":
+        motor_pwm.ChangeDutyCycle(10)
+        time.sleep(MOTOR_DURATION)
+        motor_pwm.ChangeDutyCycle(0)
+    elif state.lower() == "right":
+        motor_pwm.ChangeDutyCycle(5)
+        time.sleep(MOTOR_DURATION)
+        motor_pwm.ChangeDutyCycle(0)
     else:
-        # Stop
         motor_pwm.ChangeDutyCycle(0)
     
     return {"status": "success", "state": state}

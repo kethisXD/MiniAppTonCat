@@ -47,7 +47,7 @@ jobs:
           docker run -d --restart unless-stopped --network host \
             -v /var/lib/toncat-verifier:/data \
             -e RECEIVER_ADDRESS=UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_ \
-            -e TESTNET=true \
+            -e TESTNET=false \
             -e MIN_AMOUNT_NANOTON=100000000 \
             -e PI_FEED_URL=http://127.0.0.1:5556/feed \
             --name toncat-verifier toncat-verifier

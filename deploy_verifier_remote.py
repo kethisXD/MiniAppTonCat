@@ -21,7 +21,7 @@ PASSWORD = os.environ.get("HP_SSH_PASSWORD", "__SSH_PASSWORD__")
 
 # --- Параметры верификатора (env контейнера) ---
 RECEIVER_ADDRESS = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_"
-TESTNET = "true"  # должно совпадать с config.ini
+TESTNET = "false"  # должно совпадать с config.ini (сейчас mainnet)
 MIN_AMOUNT_NANOTON = "100000000"  # 0.1 TON
 PI_FEED_URL = "http://127.0.0.1:5556/feed"  # бэкенд малины через SSH-туннель на HP
 

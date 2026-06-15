@@ -59,11 +59,16 @@ const getStreamUrl = () => {
 
 const STREAM_URL = getStreamUrl();
 
+// Payment network (build-time, NOT from the feeder's /status — the Pi may be offline
+// or report a stale flag, which must not change which network we charge on).
+// false = MAINNET, true = TESTNET.
+const PAYMENT_TESTNET = false;
+
 function AppContent() {
   const [debugMode, setDebugMode] = useState(true);
-  // Default to testnet: this is a testnet-only project, and if the feeder is offline
-  // (/status unreachable) we must not fall back to the mainnet receiver address.
-  const [isTestnet, setIsTestnet] = useState(true);
+  // Reflects the feeder's reported network — for the debug overlay only.
+  // The payment network is fixed by PAYMENT_TESTNET, not by this.
+  const [isTestnet, setIsTestnet] = useState(PAYMENT_TESTNET);
   const wallet = useTonWallet();
 
   useEffect(() => {
@@ -152,7 +157,7 @@ function AppContent() {
           </div>
         ) : (
           <div style={{ width: '80%', display: 'flex', justifyContent: 'center' }}>
-            <DonationButton verifyBase={VERIFY_BASE} isTestnet={isTestnet} />
+            <DonationButton verifyBase={VERIFY_BASE} isTestnet={PAYMENT_TESTNET} />
           </div>
         )}
       </div>

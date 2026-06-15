@@ -2,8 +2,10 @@ import { useTonConnectUI } from '@tonconnect/ui-react';
 import { useState } from 'react';
 import styles from '../App.module.css';
 
-const RECEIVER_ADDRESS_MAINNET = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_";
-const RECEIVER_ADDRESS_TESTNET = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_"; // TODO: Replace with actual testnet address if different
+// Raw (network-agnostic) form of the receiver UQCJ0se…AsC0Tl5P_.
+// The user-friendly UQ form carries a MAINNET flag; a testnet wallet chokes on it
+// ([TON_CONNECT_SDK_ERROR] NullPointerException). Raw "0:<hex>" works on both networks.
+const RECEIVER_ADDRESS = "0:89d2c7be009efc3863f837b0c08ff026d4f717ef0626797b12c080c0b02d1397";
 const DONATION_AMOUNT_TON = "0.1"; // Minimal donation
 const DONATION_AMOUNT_NANOTONS = "100000000"; // 0.1 * 10^9
 
@@ -50,7 +52,7 @@ export function DonationButton({ verifyBase, isTestnet }) {
     const [message, setMessage] = useState('');
 
     const handleDonation = async () => {
-        const targetAddress = isTestnet ? RECEIVER_ADDRESS_TESTNET : RECEIVER_ADDRESS_MAINNET;
+        const targetAddress = RECEIVER_ADDRESS;
         // Unique nonce ties THIS payment to THIS feed request (anti-replay on the backend).
         const nonce = crypto.randomUUID().replace(/-/g, '');
         setStatus('processing');

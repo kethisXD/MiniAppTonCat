@@ -64,8 +64,15 @@ const STREAM_URL = getStreamUrl();
 // false = MAINNET, true = TESTNET.
 const PAYMENT_TESTNET = false;
 
+// Только этому Telegram-пользователю (владельцу) показываем debug-UI.
+const DEV_TELEGRAM_ID = 889463080;
+// На localhost (локальная разработка) Telegram user id недоступен — разрешаем debug по хосту.
+const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
 function AppContent() {
   const [debugMode, setDebugMode] = useState(true);
+  // Виден ли debug-UI: владелец по Telegram id или локальная разработка.
+  const [isDeveloper, setIsDeveloper] = useState(IS_LOCALHOST);
   // Reflects the feeder's reported network — for the debug overlay only.
   // The payment network is fixed by PAYMENT_TESTNET, not by this.
   const [isTestnet, setIsTestnet] = useState(PAYMENT_TESTNET);
@@ -83,6 +90,8 @@ function AppContent() {
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
+      const uid = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+      if (uid === DEV_TELEGRAM_ID) setIsDeveloper(true);
     }
   }, []);
 
@@ -98,7 +107,7 @@ function AppContent() {
 
       {/* 2. Top Bar (Overlay) */}
       <div className={styles.topBar}>
-        {debugMode && (
+        {isDeveloper && debugMode && (
           <div className={styles.controlsColumn}>
             {/* Light Control Buttons (Simple ON/OFF) */}
             <div className={styles.controlRow}>
@@ -141,12 +150,14 @@ function AppContent() {
 
         <div style={{ flex: 1 }} /> {/* Spacer */}
 
-        <button
-          className={`${styles.badge} ${styles.debugBadge}`}
-          onClick={() => setDebugMode(!debugMode)}
-        >
-          debug
-        </button>
+        {isDeveloper && (
+          <button
+            className={`${styles.badge} ${styles.debugBadge}`}
+            onClick={() => setDebugMode(!debugMode)}
+          >
+            debug
+          </button>
+        )}
       </div>
 
       {/* 3. Bottom Controls */}
@@ -162,12 +173,12 @@ function AppContent() {
         )}
       </div>
 
-      {/* 3. Debug Overlay - Always rendered but hidden to keep connection alive */}
-      <div style={{ display: debugMode ? 'block' : 'none' }}>
+      {/* 3. Debug Overlay - Only for the developer; hidden (not unmounted) to keep connection alive */}
+      {isDeveloper && (
         <div style={{ display: debugMode ? 'block' : 'none' }}>
           <DebugOverlay isVisible={debugMode} wallet={wallet} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

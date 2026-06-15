@@ -61,7 +61,9 @@ const STREAM_URL = getStreamUrl();
 
 function AppContent() {
   const [debugMode, setDebugMode] = useState(true);
-  const [isTestnet, setIsTestnet] = useState(false);
+  // Default to testnet: this is a testnet-only project, and if the feeder is offline
+  // (/status unreachable) we must not fall back to the mainnet receiver address.
+  const [isTestnet, setIsTestnet] = useState(true);
   const wallet = useTonWallet();
 
   useEffect(() => {

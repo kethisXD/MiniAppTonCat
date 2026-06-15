@@ -63,6 +63,10 @@ export function DonationButton({ verifyBase, isTestnet }) {
         try {
             const transaction = {
                 validUntil: Math.floor(Date.now() / 1000) + 360, // 6 minutes
+                // Pin the network so a mainnet-only wallet (e.g. Telegram @wallet) is
+                // rejected with a clear error instead of a cryptic NullPointerException.
+                // '-3' = testnet, '-239' = mainnet.
+                network: isTestnet ? '-3' : '-239',
                 messages: [
                     {
                         address: targetAddress,

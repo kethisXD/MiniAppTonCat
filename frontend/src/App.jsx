@@ -217,7 +217,8 @@ function DebugOverlay({ isVisible, wallet }) {
       })));
   };
 
-  // Poll status every 10 seconds or when made visible
+  // Poll status every 30s, and only while the debug overlay is visible — each
+  // connected client polls the Pi independently, so keep the load light (battery).
   useEffect(() => {
     if (isVisible) {
       fetchStatus();
@@ -225,7 +226,7 @@ function DebugOverlay({ isVisible, wallet }) {
 
     const interval = setInterval(() => {
       if (isVisible) fetchStatus();
-    }, 10000); // 10 seconds
+    }, 30000); // 30 seconds
     return () => clearInterval(interval);
   }, [isVisible, wallet]);
 

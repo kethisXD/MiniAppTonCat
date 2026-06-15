@@ -13,6 +13,7 @@ import os
 import re
 import time
 import sqlite3
+import threading
 import contextlib
 
 import httpx
@@ -31,6 +32,9 @@ PI_FEED_URL = os.environ.get("PI_FEED_URL", "http://127.0.0.1:5556/feed")
 DB_PATH = os.environ.get("DB_PATH", "/data/used.db")
 # Принимаем только свежие платежи — отсекает переигрывание старья после рестарта.
 MAX_AGE_SECONDS = int(os.environ.get("MAX_AGE_SECONDS", "3600"))  # 1 час (запас на загрузку кормушки)
+# Задержка перед запуском мотора: фронт успевает показать и закрыть модалку успеха,
+# чтобы кормление было видно на чистом стриме (модалка его не перекрывала).
+FEED_DELAY = float(os.environ.get("FEED_DELAY", "5"))
 
 TONCENTER_BASE = (
     "https://testnet.toncenter.com/api/v2"
@@ -139,6 +143,17 @@ def _trigger_feed():
         return r.json()
 
 
+def _delayed_feed(tx_key: str, nonce: str):
+    """Ждёт FEED_DELAY, затем крутит мотор. Если кормушка офлайн — снимает claim."""
+    time.sleep(FEED_DELAY)
+    try:
+        _trigger_feed()
+        print(f"[verify] FED (after {FEED_DELAY}s) nonce={nonce} tx={tx_key}")
+    except Exception as e:
+        print(f"[verify] delayed feed failed, releasing claim: {e}")
+        _unmark_used(tx_key)
+
+
 @app.post("/verify")
 def verify(req: VerifyRequest):
     nonce = (req.nonce or "").strip()
@@ -161,14 +176,9 @@ def verify(req: VerifyRequest):
         # Этот платёж уже отработан раньше — анти-replay.
         return {"status": "already_used"}
 
-    try:
-        feed_result = _trigger_feed()
-    except Exception as e:
-        print(f"[verify] feed call failed: {e}")
-        # Платёж валиден, но кормушка не ответила (офлайн). Снимаем claim, чтобы
-        # этот же платёж можно было повторить, когда железо вернётся в строй.
-        _unmark_used(tx_key)
-        return {"status": "feed_failed", "reason": str(e)}
-
-    print(f"[verify] FED nonce={nonce} tx={tx_key} value={tx.get('in_msg', {}).get('value')}")
-    return {"status": "fed", "tx": tx_key, "feed": feed_result}
+    # Платёж подтверждён. Кормим в фоне с задержкой, а фронту сразу отвечаем "fed":
+    # модалка успеха показывается и закрывается, а мотор срабатывает уже на чистом
+    # стриме (через FEED_DELAY секунд). Если кормушка офлайн — claim снимется в фоне.
+    threading.Thread(target=_delayed_feed, args=(tx_key, nonce), daemon=True).start()
+    print(f"[verify] CONFIRMED nonce={nonce} tx={tx_key}, feed in {FEED_DELAY}s")
+    return {"status": "fed", "tx": tx_key, "feed_delay": FEED_DELAY}

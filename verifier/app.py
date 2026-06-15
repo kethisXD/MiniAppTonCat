@@ -30,7 +30,7 @@ TONCENTER_API_KEY = os.environ.get("TONCENTER_API_KEY", "").strip()
 PI_FEED_URL = os.environ.get("PI_FEED_URL", "http://127.0.0.1:5556/feed")
 DB_PATH = os.environ.get("DB_PATH", "/data/used.db")
 # Принимаем только свежие платежи — отсекает переигрывание старья после рестарта.
-MAX_AGE_SECONDS = int(os.environ.get("MAX_AGE_SECONDS", "900"))  # 15 минут
+MAX_AGE_SECONDS = int(os.environ.get("MAX_AGE_SECONDS", "3600"))  # 1 час (запас на загрузку кормушки)
 
 TONCENTER_BASE = (
     "https://testnet.toncenter.com/api/v2"
@@ -62,7 +62,7 @@ def _db():
 
 
 def _mark_used(tx_key: str, nonce: str) -> bool:
-    """Атомарно помечает транзакцию использованной. False, если уже была."""
+    """Атомарно помечает транзакцию использованной (claim). False, если уже была."""
     conn = _db()
     try:
         conn.execute(
@@ -73,6 +73,16 @@ def _mark_used(tx_key: str, nonce: str) -> bool:
         return True
     except sqlite3.IntegrityError:
         return False
+    finally:
+        conn.close()
+
+
+def _unmark_used(tx_key: str):
+    """Снимает claim — чтобы платёж можно было повторить, если кормление не удалось."""
+    conn = _db()
+    try:
+        conn.execute("DELETE FROM used_tx WHERE tx_key = ?", (tx_key,))
+        conn.commit()
     finally:
         conn.close()
 
@@ -155,7 +165,9 @@ def verify(req: VerifyRequest):
         feed_result = _trigger_feed()
     except Exception as e:
         print(f"[verify] feed call failed: {e}")
-        # Платёж валиден, но мотор не дёрнулся — сообщаем об ошибке железа.
+        # Платёж валиден, но кормушка не ответила (офлайн). Снимаем claim, чтобы
+        # этот же платёж можно было повторить, когда железо вернётся в строй.
+        _unmark_used(tx_key)
         return {"status": "feed_failed", "reason": str(e)}
 
     print(f"[verify] FED nonce={nonce} tx={tx_key} value={tx.get('in_msg', {}).get('value')}")

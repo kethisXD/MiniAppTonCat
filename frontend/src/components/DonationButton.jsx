@@ -7,13 +7,52 @@ const RECEIVER_ADDRESS_TESTNET = "UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5
 const DONATION_AMOUNT_TON = "0.1"; // Minimal donation
 const DONATION_AMOUNT_NANOTONS = "100000000"; // 0.1 * 10^9
 
-export function DonationButton({ apiBase, isTestnet }) {
+// Poll settings for on-chain verification (indexer lag tolerance)
+const VERIFY_ATTEMPTS = 10;
+const VERIFY_INTERVAL_MS = 3000;
+
+// Build a TON text-comment payload (BOC, base64) carrying the unique nonce.
+// op=0 (4 zero bytes) + UTF-8 string = standard text comment that the indexer
+// surfaces as in_msg.message. We serialize a single ordinary cell (no refs) by
+// hand to avoid pulling a TON SDK + Buffer polyfill into the browser bundle.
+// Assumes the payload fits one cell (< 120 bytes), which a 32-char nonce does.
+function buildCommentPayload(text) {
+    const enc = new TextEncoder().encode(text);
+    const data = new Uint8Array(4 + enc.length); // first 4 bytes (op=0) stay zero
+    data.set(enc, 4);
+    const bits = data.length * 8;
+    const cell = new Uint8Array(2 + data.length);
+    cell[0] = 0x00; // d1: ordinary cell, 0 refs, level 0
+    cell[1] = Math.floor(bits / 8) + Math.ceil(bits / 8); // d2: data length descriptor
+    cell.set(data, 2);
+
+    const boc = new Uint8Array(11 + cell.length);
+    boc.set([0xb5, 0xee, 0x9c, 0x72], 0); // BOC magic
+    boc[4] = 0x01; // flags=0, ref-size=1 byte
+    boc[5] = 0x01; // offset-size=1 byte
+    boc[6] = 0x01; // cells count = 1
+    boc[7] = 0x01; // roots count = 1
+    boc[8] = 0x00; // absent = 0
+    boc[9] = cell.length & 0xff; // total cells size
+    boc[10] = 0x00; // root cell index = 0
+    boc.set(cell, 11);
+
+    let bin = '';
+    for (const b of boc) bin += String.fromCharCode(b);
+    return btoa(bin);
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export function DonationButton({ verifyBase, isTestnet }) {
     const [tonConnectUI] = useTonConnectUI();
     const [status, setStatus] = useState('idle'); // idle, processing, success, error
     const [message, setMessage] = useState('');
 
     const handleDonation = async () => {
         const targetAddress = isTestnet ? RECEIVER_ADDRESS_TESTNET : RECEIVER_ADDRESS_MAINNET;
+        // Unique nonce ties THIS payment to THIS feed request (anti-replay on the backend).
+        const nonce = crypto.randomUUID().replace(/-/g, '');
         setStatus('processing');
         setMessage(`Please approve the transaction in your wallet... (${isTestnet ? 'TESTNET' : 'MAINNET'})`);
 
@@ -24,26 +63,61 @@ export function DonationButton({ apiBase, isTestnet }) {
                     {
                         address: targetAddress,
                         amount: DONATION_AMOUNT_NANOTONS, // 0.1 TON
+                        payload: buildCommentPayload(nonce), // nonce as text comment
                     }
                 ]
             };
 
-            const result = await tonConnectUI.sendTransaction(transaction);
+            await tonConnectUI.sendTransaction(transaction);
 
-            console.log('Transaction success:', result);
-            setMessage('Payment successful! Feeding the cat... 😺');
+            // Payment is signed — now verify it on-chain before the motor runs.
+            // The Pi /feed is NOT called directly anymore; only the verifier may trigger it.
+            setMessage('Verifying payment on-chain... 🔍');
 
-            // Trigger the motor on success
-            await fetch(`${apiBase}/feed`, { method: 'POST' });
+            let fed = false;
+            for (let attempt = 0; attempt < VERIFY_ATTEMPTS; attempt++) {
+                let data;
+                try {
+                    const res = await fetch(`${verifyBase}/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nonce }),
+                    });
+                    data = await res.json();
+                } catch {
+                    data = { status: 'pending' };
+                }
 
+                if (data.status === 'fed') {
+                    fed = true;
+                    break;
+                }
+                if (data.status === 'already_used') {
+                    throw new Error('Payment already used');
+                }
+                if (data.status === 'feed_failed') {
+                    throw new Error('Payment OK, but feeder hardware did not respond');
+                }
+                if (data.status === 'error') {
+                    throw new Error('Verification rejected the request');
+                }
+                // pending → indexer lag, wait and retry
+                await sleep(VERIFY_INTERVAL_MS);
+            }
+
+            if (!fed) {
+                throw new Error('Payment not confirmed in time. If you paid, the cat will not be fed twice — please retry.');
+            }
+
+            setMessage('Payment verified! Feeding the cat... 😺');
             setStatus('success');
             setTimeout(() => setStatus('idle'), 3000); // Hide after 3s
 
         } catch (e) {
-            console.error('Transaction failed or canceled:', e);
+            console.error('Transaction failed, canceled, or unverified:', e);
             setStatus('error');
-            setMessage('Donation failed or canceled ❌');
-            setTimeout(() => setStatus('idle'), 3000);
+            setMessage(e?.message || 'Donation failed or canceled ❌');
+            setTimeout(() => setStatus('idle'), 4000);
         }
     };
 

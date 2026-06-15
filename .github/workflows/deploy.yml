@@ -1,0 +1,57 @@
+name: Deploy to HP
+
+# CD: при push в main пересобирает и перезапускает docker-контейнеры
+# прямо на HP-сервере через self-hosted runner (services.github-runners.miniapptoncat).
+# Триггер ТОЛЬКО push в main (никаких pull_request) — репо публичный,
+# self-hosted runner не должен исполнять код из форков. RPi и Caddy/NixOS не трогаем.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'verifier/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-hp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build & restart frontend
+        run: |
+          cd frontend
+          docker build -t toncat-frontend .
+          docker rm -f toncat-frontend || true
+          docker run -d --restart unless-stopped \
+            -p 3005:80 \
+            --name toncat-frontend toncat-frontend
+
+      - name: Build & restart verifier
+        run: |
+          cd verifier
+          docker build -t toncat-verifier .
+          docker rm -f toncat-verifier || true
+          docker run -d --restart unless-stopped --network host \
+            -v /var/lib/toncat-verifier:/data \
+            -e RECEIVER_ADDRESS=UQCJ0se-AJ78OGP4N7DAj_Am1PcX7wYmeXsSwIDAsC0Tl5P_ \
+            -e TESTNET=true \
+            -e MIN_AMOUNT_NANOTON=100000000 \
+            -e PI_FEED_URL=http://127.0.0.1:5556/feed \
+            --name toncat-verifier toncat-verifier
+
+      - name: Health checks
+        run: |
+          sleep 3
+          echo "verifier /health:"; curl -fsS http://127.0.0.1:5557/health && echo
+          docker ps --filter name=toncat --format '{{.Names}} {{.Status}}'
+
+      - name: Prune dangling images
+        if: always()
+        run: docker image prune -f || true

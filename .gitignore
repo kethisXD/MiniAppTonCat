@@ -6,7 +6,12 @@ __pycache__/
 .idea/
 node_modules/
 
+# Local Claude Code settings (may contain secrets/permission rules)
+.claude/
+
 # Deployment scripts (Secrets)
 deploy_scp.py
 ssh_exec.py
 frontend.tar.gz
+verifier.tar.gz
+*.tar.gz

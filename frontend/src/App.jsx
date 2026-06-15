@@ -25,6 +25,23 @@ const getApiBaseUrl = () => {
 
 const API_BASE = getApiBaseUrl();
 
+const getVerifyBaseUrl = () => {
+  // Allow override via query param ?verify=...
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('verify')) {
+    return params.get('verify');
+  }
+
+  // Dev: verifier runs on the HP server (reachable on LAN).
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://192.168.1.150:5557';
+  }
+  // In production/Telegram, use relative path handled by Caddy (/verify -> verifier).
+  return '/verify';
+};
+
+const VERIFY_BASE = getVerifyBaseUrl();
+
 const getStreamUrl = () => {
   // Allow override via query param ?stream=...
   const params = new URLSearchParams(window.location.search);
@@ -133,7 +150,7 @@ function AppContent() {
           </div>
         ) : (
           <div style={{ width: '80%', display: 'flex', justifyContent: 'center' }}>
-            <DonationButton apiBase={API_BASE} isTestnet={isTestnet} />
+            <DonationButton verifyBase={VERIFY_BASE} isTestnet={isTestnet} />
           </div>
         )}
       </div>

@@ -21,6 +21,8 @@
 | Путь | Что это |
 |------|---------|
 | `rpi_server.py` | **Реальный бэкенд**, крутится на Pi. FastAPI :8000. Эндпоинты: `/status`, `/light/{on\|off}`, `/motor/{left\|right}`, `/feed` |
+| `verifier/` | **Верификатор оплаты** (FastAPI, docker `toncat-verifier` на HP). `/verify {nonce}` проверяет платёж в TON перед кормлением |
+| `.github/workflows/deploy.yml` | **CI/CD:** push в main → self-hosted runner на HP пересобирает контейнеры frontend+verifier |
 | `main.py` | Мёртвый FastAPI-скелет (только `/health`). По сути не используется |
 | `config.ini` | `feed_duration`, `motor_duration`, `testnet` |
 | `frontend/` | React + Vite, TON Connect. `App.jsx` — рабочий, `App.tsx` — старый вариант |
@@ -95,11 +97,24 @@ python3 rpi_server.py                          # FastAPI :8000
 
 ---
 
+## CI/CD (self-hosted)
+Push в `main` (изменения в `frontend/**` или `verifier/**`) → GitHub Actions запускает
+workflow `.github/workflows/deploy.yml` на **self-hosted runner на HP**
+(`services.github-runners.miniapptoncat` в `/etc/nixos/github-runner.nix`, токен в
+`/var/keys/github/miniapptoncat`, состоит в группе `docker`). Runner локально пересобирает
+и перезапускает контейнеры `toncat-frontend` (:3005) и `toncat-verifier` (:5557). Триггер
+ТОЛЬКО push (не PR — репо публичный, защита от RCE из форков). Caddy/NixOS и малина — вручную.
+
+---
+
 ## Известные проблемы / бэклог
 1. **🔴 Утечка секретов:** пароль `__SSH_PASSWORD__` в plaintext в ~15 файлах, `StrictHostKeyChecking=no`
    везде. Сменить пароль, перейти на SSH-ключи, вычистить файлы и историю git. **До любого push.**
-2. **🔴 Донат не верифицируется on-chain:** фронт дёргает `/feed` после client-side
-   `sendTransaction`. Любой может `curl /feed`. Нужна проверка платежа на бэкенде.
+2. **✅ Донат верифицируется on-chain (СДЕЛАНО 2026-06-15):** сервис `verifier/` (docker
+   `toncat-verifier` на HP, `--network host`, 127.0.0.1:5557) проверяет платёж по nonce через
+   toncenter (testnet), анти-replay по хешу tx в SQLite, дёргает /feed малины через туннель
+   127.0.0.1:5556. Фронт кладёт nonce текст-комментарием в tx и поллит `/verify`. Caddy:
+   `/verify/*→5557`, прямой `/pi/feed→403`. Деплой: `deploy_verifier_remote.py` или CI (см. ниже).
 3. **🟠 ~30 одноразовых ssh-скриптов** — снести, оставить нормальный деплой.
 4. **🟠 Нет автозапуска** — поднять systemd-юниты (go2rtc, rpi_server) с `Restart=always`,
    `enable` на загрузку.

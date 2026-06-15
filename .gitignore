@@ -3,6 +3,8 @@
 __pycache__/
 *.pyc
 .DS_Store
+.idea/
+node_modules/
 
 # Deployment scripts (Secrets)
 deploy_scp.py

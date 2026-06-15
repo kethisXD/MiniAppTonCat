@@ -4,6 +4,9 @@ name: Deploy to HP
 # прямо на HP-сервере через self-hosted runner (services.github-runners.miniapptoncat).
 # Триггер ТОЛЬКО push в main (никаких pull_request) — репо публичный,
 # self-hosted runner не должен исполнять код из форков. RPi и Caddy/NixOS не трогаем.
+#
+# Никаких JS-экшенов (actions/checkout и т.п.): пакет раннера на NixOS даёт только
+# node24, а checkout@v4 требует node20. Поэтому код тянем вручную через git (bash).
 on:
   push:
     branches: [main]
@@ -21,12 +24,15 @@ jobs:
   deploy:
     runs-on: [self-hosted, Linux]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Fetch repo (manual clone, public repo)
+        run: |
+          rm -rf src
+          git clone --depth 1 --branch "${GITHUB_REF_NAME}" \
+            "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" src
 
       - name: Build & restart frontend
+        working-directory: src/frontend
         run: |
-          cd frontend
           docker build -t toncat-frontend .
           docker rm -f toncat-frontend || true
           docker run -d --restart unless-stopped \
@@ -34,8 +40,8 @@ jobs:
             --name toncat-frontend toncat-frontend
 
       - name: Build & restart verifier
+        working-directory: src/verifier
         run: |
-          cd verifier
           docker build -t toncat-verifier .
           docker rm -f toncat-verifier || true
           docker run -d --restart unless-stopped --network host \

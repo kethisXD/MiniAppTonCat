@@ -21,6 +21,11 @@ FROM nginx:alpine
 # Copy the build output from the previous stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Files copied from public/ can land as 0600 root, which the nginx worker (user
+# `nginx`) cannot read -> 403 on tonconnect-manifest.json / logo.png. Make the
+# whole web root world-readable (dirs traversable) so static assets are served.
+RUN chmod -R a+rX /usr/share/nginx/html
+
 # Copy custom Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
